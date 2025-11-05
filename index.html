@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cloudflare Antibot (Turnstile) — Redirect on Success</title>
+  <style>
+    :root{--bg:#f7fafc;--card:#fff;--muted:#6b7280}
+    body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); margin:0; display:flex; min-height:100vh; align-items:center; justify-content:center}
+    .card{background:var(--card); padding:28px; border-radius:12px; box-shadow:0 6px 24px rgba(16,24,40,0.08); width:min(560px,94%)}
+    h1{margin:0 0 8px;font-size:20px}
+    p{margin:0 0 16px;color:var(--muted)}
+    .note{font-size:13px;color:#374151;margin-top:12px}
+    .actions{display:flex;gap:8px;align-items:center}
+    button{padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:white;cursor:pointer}
+  </style>
+  <!-- Cloudflare Turnstile client script -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>Cloudflare Antibot — Verify to continue</h1>
+    
+
+    <!--
+      IMPORTANT: Replace `your-site-key-here` with your Cloudflare Turnstile sitekey.
+      Obtain it from your Cloudflare dashboard (Turnstile > Create sitekey).
+      For production you should verify the token on the server (see commented fetch example below).
+    -->
+
+    <div id="turnstile-wrapper">
+      <div
+        class="cf-turnstile"
+        data-sitekey="0x4AAAAAAB_Ro2iPgdhMn3OP"
+        data-callback="onTurnstileSuccess"
+        data-error-callback="onTurnstileError"
+        data-expired-callback="onTurnstileExpired"
+      ></div>
+    </div>
+
+    <div class="note" id="status">Waiting for verification...</div>
+
+    <div class="actions" style="margin-top:16px">
+      <button id="resetBtn" type="button">Reset widget</button>
+      <button id="manualCheck" type="button">Simulate success (dev)</button>
+    </div>
+
+   
+  </main>
+
+  <script>
+    // Client-side callbacks from Turnstile
+    function onTurnstileSuccess(token) {
+      // token is a short-lived assertion string. You SHOULD verify it server-side.
+      document.getElementById('status').textContent = 'Verification succeeded. Redirecting...';
+
+      // OPTIONAL: verify token on your server before redirecting. Example (recommended):
+      // fetch('/verify-turnstile', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token}) })
+      //   .then(r => r.json())
+      //   .then(result => { if (result.success) window.location.href = 'index2.html'; else show error });
+
+      // For a quick client-side redirect (not secure by itself):
+      window.location.replace('index2.html');
+    }
+
+    function onTurnstileError() {
+      document.getElementById('status').textContent = 'An error occurred with the anti-bot check. Please try again.';
+    }
+
+    function onTurnstileExpired() {
+      document.getElementById('status').textContent = 'Verification expired. Please complete the challenge again.';
+    }
+
+    // Utility: allow manual reset of widget
+    document.getElementById('resetBtn').addEventListener('click', function () {
+      if (window.turnstile) {
+        try { window.turnstile.reset(); document.getElementById('status').textContent = 'Widget reset.' } catch(e) { console.warn(e); }
+      }
+    });
+
+    // DEV helper: simulate a success without contacting Cloudflare (only for local dev)
+    document.getElementById('manualCheck').addEventListener('click', function () {
+      // WARNING: do not use in production. This bypasses real validation.
+      onTurnstileSuccess('dev-simulated-token');
+    });
+  </script>
+</body>
+</html>
